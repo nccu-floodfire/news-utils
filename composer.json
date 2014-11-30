@@ -1,0 +1,10 @@
+{
+  "autoload": {
+    "psr-4": {"Us\\": "src/Us/"}
+  },
+  "require": {
+    "facebook/php-sdk-v4" : "4.0.*",
+    "crodas/influx-php" : "*",
+    "guzzlehttp/guzzle": "~5.0"
+  }
+}
