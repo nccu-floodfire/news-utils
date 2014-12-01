@@ -87,12 +87,42 @@ if ($action === null) {
     exit(0);
 } else if ($action === 'fetch-hot') {
     $HotNews = new HotNews($Db, $config);
-    return $HotNews->run();
+    $HotNews->run();
+    exit();
 } else if ($action === 'fetch-all') {
     $AllNews = new AllNews($Db, $config);
-    return $AllNews->run();
+    $AllNews->run();
+    exit();
 } else if ($action === 'fetch-count-for-link') {
-    $FB = FacebookSocialClient::getInstance($config);
+
+    $Fb = FacebookSocialClient::getInstance($config);
+    $Dbh = new PDO('mysql:host=127.0.0.1;dbname=newsdiff', 'root', '');
+    $Dbh->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $date = $config['date'];
+    $ts_start = strtotime($date);
+    $ts_end = $ts_start + 86400 - 1;
+    $stmt = $Dbh->prepare("select id, url from news where created_at between $ts_start and $ts_end;");
+    $stmt->execute();
+    while ($rs = $stmt->fetch(PDO::FETCH_OBJ)) {
+        echo "URL: {$rs->url} ...";
+        try {
+            $GraphObj = $Fb->getLinkGraphObj($rs->url);
+            $ShareObj = $GraphObj->getProperty('share');
+            $input['share_count'] = $ShareObj->getProperty('share_count');
+            $input['comment_count'] = $ShareObj->getProperty('comment_count');
+            $stmt2 = $Dbh->prepare("update news set share_count = :share_count, comment_count = :comment_count where id = :id");
+            $stmt2->bindValue(':share_count', $input['share_count'], PDO::PARAM_INT);
+            $stmt2->bindValue(':comment_count', $input['comment_count'], PDO::PARAM_INT);
+            $stmt2->bindValue(':id', $rs->id, PDO::PARAM_INT);
+            $stmt2->execute();
+            echo " Done!\n";
+            sleep(1);
+        } catch (\Exception $e) {
+            echo " Failed! - {$e->getMessage()}";
+        }
+    }
+    unset($Dbh);
+    exit();
     // TBD
 }
 
