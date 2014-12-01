@@ -1,9 +1,8 @@
-<?php
-namespace Us\Utils\Engine;
+<?php namespace Us\Utils\NewsService;
 use GuzzleHttp\Client;
 use GuzzleHttp\Message\ResponseInterface;
 
-class HttpHelper
+class NewsClient
 {
 	private $_client = null;
 	private $_hot_api_url = 'http://news-ckip.source.today/api/news/v1/hot/';

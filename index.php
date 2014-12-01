@@ -1,28 +1,100 @@
+#!/usr/bin/env php
 <?php
-use \Us\Utils\Engine\HotNews;
-use \Us\Utils\Engine\AllNews;
-use \Us\Utils\Engine\HttpHelper;
+
+use \Us\Utils\NewsService\HotNews;
+use \Us\Utils\NewsService\AllNews;
+use \Us\Utils\NewsService\HttpHelper;
 use \Us\Utils\Storage\InfluxDB;
+use \Us\Utils\Facebook\FacebookSocialClient;
 
 if (file_exists('vendor/autoload.php')) {
     require 'vendor/autoload.php';
 }
 
-// $url = $argv[1];
+function help()
+{
+    fwrite(STDERR, "Usage: \n");
+    fwrite(STDERR, "       --action={fetch-all|fetch-hot} \n");
+    fwrite(STDERR, "       --date \n");
+    fwrite(STDERR, "       --db-name \n");
+    fwrite(STDERR, "       --db-user \n");
+    fwrite(STDERR, "       --db-password \n");
+    fwrite(STDERR, "       --app-id \n");
+    fwrite(STDERR, "       --app-secret \n");
+    fwrite(STDERR, "       --help \n");
+}
 
-/* set parameters for develop purpose */
+$shortopts  = "";
+$longopts  = array(
+    "date:",
+    "action:",
+    "db-name:",
+    "db-user:",
+    "db-password:",
+    "app-id:",
+    "app-secret:",
+    "help"
+);
+
+$options = getopt($shortopts, $longopts);
+
+// default values
 $config["app_id"] = '';
 $config["app_secret"] = '';
-$config["sleep"] = 0.5;
-$config["date"] = '2014-11-25';
+$config["sleep"] = 1;
+$config["date"] = date("Y-m-d", time());
+$config["db_name"] = 'news_graph_dev';
+$config["db_username"] = 'user';
+$config["db_password"] = 'password';
+$action = null;
 
-$config["db_username"] = "albert";
-$config["db_password"] = "albert";
+foreach ($options as $k => $v) {
+    switch ($k) {
+        case 'app-id':
+            $config["app_id"] = $v;
+            break;
+        case 'app-secret':
+            $config["app_secret"] = $v;
+            break;
+        case 'date':
+            $config['date'] = $v;
+            break;
+        case 'db-name':
+            $config['db_name'] = $v;
+            break;
+        case 'db-user':
+            $config['db_user'] = $v;
+            break;
+        case 'db-password':
+            $config['db_password'] = $v;
+            break;
+        case 'action':
+            $action = $v;
+            break;
+        case 'help':
+            help();
+            exit(0);
+            break;
+        default:
+            break;
+    }
+}
 
-$Db = new InfluxDB($config["db_username"], $config["db_password"]);
+$Db = new InfluxDB($config["db_name"], $config["db_username"], $config["db_password"]);
 
-/*$HotNews = new HotNews($config);
-$HotNews->run();*/
+if ($action === null) {
+    help();
+    exit(0);
+} else if ($action === 'fetch-hot') {
+    $HotNews = new HotNews($Db, $config);
+    return $HotNews->run();
+} else if ($action === 'fetch-all') {
+    $AllNews = new AllNews($Db, $config);
+    return $AllNews->run();
+} else if ($action === 'fetch-count-for-link') {
+    $FB = FacebookSocialClient::getInstance($config);
+    // TBD
+}
 
-$AllNews = new AllNews($Db, $config);
-$AllNews->run();
+help();
+exit (1);

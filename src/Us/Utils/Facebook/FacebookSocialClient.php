@@ -1,9 +1,8 @@
-<?php
-namespace Us\Utils\Engine;
+<?php namespace Us\Utils\Facebook;
 use Facebook\FacebookSession;
 use Facebook\FacebookRequest;
 
-class NewsClient
+class FacebookSocialClient
 {
 	private $_session = null; // facebook request session
 	private static $instance = null;
@@ -26,7 +25,7 @@ class NewsClient
         return self::$instance;
     }
 
-	public function getLinkData($url)
+	public function getLinkGraphObj($url)
 	{
 		/* Facebook PHP SDK v4.0.0 */
 		$request = new FacebookRequest(
@@ -35,17 +34,9 @@ class NewsClient
 			"/{$url}"
 			);
 		$response = $request->execute();
-		$graphArr = $response->getGraphObject()->asArray();
-		$shareObj = $graphArr["share"];
+		$GraphObj = $response->getGraphObject();
 
-		return $shareObj;
+		return $GraphObj;
 	}
 
-	public function getShareCount($url)
-	{
-		$shareObj = $this->getLinkData($url);
-		$result = $shareObj->share_count;
-
-		return $result;
-	}
 }

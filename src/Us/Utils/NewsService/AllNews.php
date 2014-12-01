@@ -1,5 +1,4 @@
-<?php
-namespace Us\Utils\Engine;
+<?php namespace Us\Utils\NewsService;
 use \Us\Utils\Storage\StorageInterface;
 
 class AllNews
@@ -27,15 +26,21 @@ class AllNews
 
 	public function run()
 	{
-		$this->error_output("application is starting... \n");
-		$HttpHelper = new HttpHelper();
+		$this->error_output("application start for {$this->_config['date']} \n");
+		$NewsClient = new NewsClient();
 
-		$news = $HttpHelper->getAllNewsByDate($this->_config["date"]);
+		$news = $NewsClient->getAllNewsByDate($this->_config["date"]);
 
 		// saving data from news api to influxDB
 		foreach ($news["data"] as $data) {
 			$data["time"] = strtotime(date($this->_config["date"]));
-			$this->_storage->InsertNews($data);
+			$data['type'] = 1;
+			try {
+				$this->_storage->InsertNews($data, $data['term']); // term as table name
+			} catch (\Exception $e) {
+				$this->error_output($e->getMessage() . "\n");
+				return false;
+			}
 			$this->error_output("data inserted. \n");
 		}
 		$this->error_output("finished. \n");
