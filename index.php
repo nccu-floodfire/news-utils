@@ -104,7 +104,7 @@ if ($action === null) {
     $stmt = $Dbh->prepare("select id, url from news where created_at between $ts_start and $ts_end;");
     $stmt->execute();
     while ($rs = $stmt->fetch(PDO::FETCH_OBJ)) {
-        echo "URL: {$rs->url} ...";
+        echo "[{$date}] URL: {$rs->url} ...";
         try {
             $GraphObj = $Fb->getLinkGraphObj($rs->url);
             $ShareObj = $GraphObj->getProperty('share');
