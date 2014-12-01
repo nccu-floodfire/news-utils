@@ -103,8 +103,10 @@ if ($action === null) {
     $ts_end = $ts_start + 86400 - 1;
     $stmt = $Dbh->prepare("select id, url from news where created_at between $ts_start and $ts_end;");
     $stmt->execute();
+    $index = 0;
     while ($rs = $stmt->fetch(PDO::FETCH_OBJ)) {
-        echo "[{$date}] URL: {$rs->url} ...";
+        $index++;
+        echo "[{$date}] URL: {$rs->url} ($index/{$stmt->rowCount()}) ...";
         try {
             $GraphObj = $Fb->getLinkGraphObj($rs->url);
             $ShareObj = $GraphObj->getProperty('share');
@@ -115,7 +117,8 @@ if ($action === null) {
             $stmt2->bindValue(':comment_count', $input['comment_count'], PDO::PARAM_INT);
             $stmt2->bindValue(':id', $rs->id, PDO::PARAM_INT);
             $stmt2->execute();
-            echo " Done!\n";
+            unset($stmt2);
+            echo " Done! ({$input['share_count']}|{$input['comment_count']})\n";
             sleep(1);
         } catch (\Exception $e) {
             echo " Failed! - {$e->getMessage()}";
