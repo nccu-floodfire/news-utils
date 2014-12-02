@@ -121,7 +121,7 @@ if ($action === null) {
             echo " Done! ({$input['share_count']}|{$input['comment_count']})\n";
             sleep(1);
         } catch (\Exception $e) {
-            echo " Failed! - {$e->getMessage()}";
+            echo " Failed! - {$e->getMessage()}\n";
         }
     }
     unset($Dbh);
