@@ -109,6 +109,11 @@ if ($action === null) {
         echo "[{$date}] URL: {$rs->url} ($index/{$stmt->rowCount()}) ...";
         try {
             $GraphObj = $Fb->getLinkGraphObj($rs->url);
+            $arr = $GraphObj->asArray();
+            if (array_key_exists('og_object', $arr) && $arr['og_object']->type == 'website') {
+                // skip website
+                continue;
+            }
             $ShareObj = $GraphObj->getProperty('share');
             $input['share_count'] = $ShareObj->getProperty('share_count');
             $input['comment_count'] = $ShareObj->getProperty('comment_count');
