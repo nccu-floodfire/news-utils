@@ -111,10 +111,12 @@ if ($action === null) {
         try {
             $GraphObj = $Fb->getLinkGraphObj($rs->url);
             $arr = $GraphObj->asArray();
+            /*
             if (array_key_exists('og_object', $arr) && $arr['og_object']->type == 'website') {
                 // skip website
                 continue;
             }
+            */
             $ShareObj = $GraphObj->getProperty('share');
             if (!is_object($ShareObj)) {
                 echo "Failed. Cannot find 'share'.\n";
