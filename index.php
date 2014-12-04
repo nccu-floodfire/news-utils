@@ -105,6 +105,7 @@ if ($action === null) {
     $stmt->execute();
     $index = 0;
     while ($rs = $stmt->fetch(PDO::FETCH_OBJ)) {
+        usleep(800000); // 0.8 second
         $index++;
         echo "[{$date}] URL: {$rs->url} ($index/{$stmt->rowCount()}) ...";
         try {
@@ -115,6 +116,10 @@ if ($action === null) {
                 continue;
             }
             $ShareObj = $GraphObj->getProperty('share');
+            if (!is_object($ShareObj)) {
+                echo "Failed. Cannot find 'share'.\n";
+                continue;
+            }
             $input['share_count'] = $ShareObj->getProperty('share_count');
             $input['comment_count'] = $ShareObj->getProperty('comment_count');
             $stmt2 = $Dbh->prepare("update news set share_count = :share_count, comment_count = :comment_count where id = :id");
@@ -124,7 +129,6 @@ if ($action === null) {
             $stmt2->execute();
             unset($stmt2);
             echo " Done! ({$input['share_count']}|{$input['comment_count']})\n";
-            sleep(1);
         } catch (\Exception $e) {
             echo " Failed! - {$e->getMessage()}\n";
         }
