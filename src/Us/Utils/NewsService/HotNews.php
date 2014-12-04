@@ -43,15 +43,10 @@ class HotNews
 					'time' => $item['time'],
 					'title' => $item['title'],
 					'source' => $item['source'],
+					'share_count' => $item['share_count'],
+					'comment_count' => $item['comment_count'],
 					'type' => 2
 				);
-				$this->error_output("url[" . $count . "]: "  . $item["url"] . " ...");
-				$GraphObj = $this->getGraphObj($item["url"]);
-				$ShareObj = $GraphObj->getProperty('share');
-				$input['share_count'] = $ShareObj->getProperty('share_count');
-				$input['comment_count'] = $ShareObj->getProperty('comment_count');
-
-				$this->error_output(" - {$input['share_count']}|{$input['comment_count']}\n");
 				$count++;
 				$this->_storage->InsertNews($input, $data['term']); // term as table name
 				sleep($this->_config["sleep"]);

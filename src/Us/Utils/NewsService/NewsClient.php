@@ -5,8 +5,8 @@ use GuzzleHttp\Message\ResponseInterface;
 class NewsClient
 {
 	private $_client = null;
-	private $_hot_api_url = 'http://news-ckip.source.today/api/news/v1/hot/';
-	private $_all_api_url = 'http://news-ckip.source.today/api/news/v1/all/';
+	private $_hot_api_url = 'http://nccu-news-seg.source.today/api/news/v1/hot/';
+	private $_all_api_url = 'http://nccu-news-seg.source.today/api/news/v1/all/';
 
 	public function __construct()
 	{
