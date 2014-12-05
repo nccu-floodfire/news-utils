@@ -140,39 +140,6 @@ if ($action === null) {
     unset($Dbh);
     exit();
     // TBD
-} else if ($action === 'insert-fb-count-to-serial-db') {
-    $Dbh = new PDO('mysql:host=127.0.0.1;dbname=newsdiff', 'root', '', array(PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8"));
-    $Dbh->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    $date = $config['date'];
-    $ts_start = strtotime($date);
-    $ts_end = $ts_start + 86400 - 1;
-
-
-    $NewsClient = new NewsClient();
-    $news = $NewsClient->getAllNewsByDate($date);
-    $Db = new InfluxDB($config["db_name"], $config["db_username"], $config["db_password"]);
-
-    foreach ($news['data'] as $data) {
-        $data["time"] = strtotime($date);
-        $data['type'] = 2;
-        $term = $data['term'];
-        echo "[{$date}] TERM: {$term} ...";
-        $stmt = $Dbh->prepare("select sum(share_count) as share from news where id in (select news_id from news_info where `time` between $ts_start and $ts_end and body like '%$term%');");
-        $stmt->execute();
-        $res = $stmt->fetch(PDO::FETCH_ASSOC);
-        $share = $res['share'];
-
-        echo " share: $share\n";
-
-        $input['share_count'] = (int)$share;
-        $input["time"] = strtotime($date);
-        $input['type'] = 2;
-        $input['term'] = $term;
-        $Db->InsertNews($input, $term);
-    }
-    unset($Dbh);
-    exit();
 }
-
 help();
 exit (1);
