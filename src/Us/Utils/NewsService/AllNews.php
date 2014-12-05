@@ -53,16 +53,16 @@ class AllNews
 				$stmt->execute();
 				$res = $stmt->fetch(PDO::FETCH_ASSOC);
 				$share = $res['share_c'];
-				if (!is_int($share)) {
+				if (!is_numeric($share)) {
 					$share = 0;
 				}
 				$comment = $res['comment_c'];
-				if (!is_int($comment)) {
+				if (!is_numeric($comment)) {
 					$comment = 0;
 				}
 
 				$url_count = $res['c'];
-				if (!is_int($url_count)) {
+				if (!is_numeric($url_count)) {
 					$url_count = 0;
 				}
 				fwrite(STDERR, " share_count: $share, comment_count: $comment, url_count: $url_count\n");
