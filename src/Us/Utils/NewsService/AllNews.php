@@ -49,17 +49,29 @@ class AllNews
 				$term = $data['term'];
 				fwrite(STDERR, "[{$date}] TERM: {$term} ...");
 
-				$stmt = $Dbh->prepare("select sum(share_count) as share_c, sum(comment_count) as comment_c from news where id in (select news_id from news_info where `time` between $ts_start and $ts_end and title like '%$term%');");
+				$stmt = $Dbh->prepare("select sum(share_count) as share_c, sum(comment_count) as comment_c, count(*) as c from news where id in (select news_id from news_info where `time` between $ts_start and $ts_end and title like '%$term%');");
 				$stmt->execute();
 				$res = $stmt->fetch(PDO::FETCH_ASSOC);
 				$share = $res['share_c'];
+				if (!is_int($share)) {
+					$share = 0;
+				}
 				$comment = $res['comment_c'];
-				fwrite(STDERR, " share: $share, comment: $comment\n");
+				if (!is_int($comment)) {
+					$comment = 0;
+				}
+
+				$url_count = $res['c'];
+				if (!is_int($url_count)) {
+					$url_count = 0;
+				}
+				fwrite(STDERR, " share_count: $share, comment_count: $comment, url_count: $url_count\n");
 
 				$input = $data;
 				$input["time"] = strtotime($date);
 				$input['share_count'] = (int)$share;
 				$input['comment_count'] = (int)$comment;
+				$input['url_count'] = (int)$url_count;
 				$input['term'] = $term;
 				$this->_storage->InsertNews($input, $term);
 
