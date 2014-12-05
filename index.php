@@ -6,6 +6,7 @@ use \Us\Utils\NewsService\AllNews;
 use \Us\Utils\NewsService\HttpHelper;
 use \Us\Utils\Storage\InfluxDB;
 use \Us\Utils\Facebook\FacebookSocialClient;
+use \Us\Utils\NewsService\NewsClient;
 
 if (file_exists('vendor/autoload.php')) {
     require 'vendor/autoload.php';
@@ -94,7 +95,7 @@ if ($action === null) {
     $AllNews->run();
     exit();
 } else if ($action === 'fetch-count-for-link') {
-
+    // insert fb count to main storagedb
     $Fb = FacebookSocialClient::getInstance($config);
     $Dbh = new PDO('mysql:host=127.0.0.1;dbname=newsdiff', 'root', '');
     $Dbh->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -135,9 +136,42 @@ if ($action === null) {
             echo " Failed! - {$e->getMessage()}\n";
         }
     }
+
     unset($Dbh);
     exit();
     // TBD
+} else if ($action === 'insert-fb-count-to-serial-db') {
+    $Dbh = new PDO('mysql:host=127.0.0.1;dbname=newsdiff', 'root', '');
+    $Dbh->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $date = $config['date'];
+    $ts_start = strtotime($date);
+    $ts_end = $ts_start + 86400 - 1;
+
+
+    $NewsClient = new NewsClient();
+    $news = $NewsClient->getAllNewsByDate($date);
+    $Db = new InfluxDB($config["db_name"], $config["db_username"], $config["db_password"]);
+
+    foreach ($news['data'] as $data) {
+        $data["time"] = strtotime($date);
+        $data['type'] = 2;
+        $term = $data['term'];
+        echo "[{$date}] TERM: {$term} ...";
+        $stmt = $Dbh->prepare("select sum(share_count) as share from news where id in (select news_id from news_info where `time` between $ts_start and $ts_end and body like '%$term%');");
+        $stmt->execute();
+        $res = $stmt->fetch(PDO::FETCH_ASSOC);
+        $share = $res['share'];
+
+        echo " share: $share\n";
+
+        $input['share_count'] = (int)$share;
+        $input["time"] = strtotime($date);
+        $input['type'] = 2;
+        $input['term'] = $term;
+        $Db->InsertNews($input, $term);
+    }
+    unset($Dbh);
+    exit();
 }
 
 help();
