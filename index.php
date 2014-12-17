@@ -22,6 +22,7 @@ function help()
     fwrite(STDERR, "       --db-password \n");
     fwrite(STDERR, "       --app-id \n");
     fwrite(STDERR, "       --app-secret \n");
+    fwrite(STDERR, "       --reset \n");
     fwrite(STDERR, "       --help \n");
 }
 
@@ -34,6 +35,7 @@ $longopts  = array(
     "db-password:",
     "app-id:",
     "app-secret:",
+    "reset",
     "help"
 );
 
@@ -47,6 +49,7 @@ $config["date"] = date("Y-m-d", time());
 $config["db_name"] = 'news_graph_dev';
 $config["db_username"] = 'user';
 $config["db_password"] = 'password';
+$config["reset"] = false;
 $action = null;
 
 foreach ($options as $k => $v) {
@@ -71,6 +74,9 @@ foreach ($options as $k => $v) {
             break;
         case 'action':
             $action = $v;
+            break;
+        case 'reset':
+            $config['reset'] = true;
             break;
         case 'help':
             help();
@@ -140,6 +146,36 @@ if ($action === null) {
     unset($Dbh);
     exit();
     // TBD
+} else if ($action == 'sd') {
+    $date = $config['date'];
+    $url = 'http://news-seg.source.today/api/news/v1/all/' . $date;
+    $json = file_get_contents($url);
+    $data = json_decode($json, true);
+    $Redis = new Redis();
+    $Redis->connect('127.0.0.1', 6379);
+    foreach ($data['data'] as $item) {
+        $term = $item['term'];
+        $redis_key = 'SD:TERMS:' . $term;
+        if ($config['reset'] === true) {
+            $Redis->del($redis_key);
+            continue;
+        }
+
+        $hashdata = $Redis->hGetAll($redis_key);
+        $total = 0;
+        $count = 0;
+        if (count($hashdata) !== 0) {
+            $total = $hashdata['total'];
+            $count = $hashdata['count'];
+        }
+
+        $total = $total + $item['rate'];
+        $count = $count + 1;
+        $Redis->hset($redis_key, 'total', $total);
+        $Redis->hset($redis_key, 'count', $count);
+        fwrite(STDERR, "[$date] TERM: $term is now {total: $total, count: $count} \n");
+    }
+    exit (0);
 }
 help();
 exit (1);
