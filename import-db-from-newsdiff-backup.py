@@ -3,76 +3,95 @@
 import sys
 import json
 import mysql.connector
+import getopt
+import ast
 
-filename = sys.argv[1]
-f = open(filename, 'r')
+set_ids = set()
 
-counter = 0
-total = 0
-title = ""
-content = ""
-obj = None
+is_dryrun = False
+action = ''
 
-cnx = mysql.connector.connect(host='127.0.0.1', user='root', password='', database='newsdiff', charset='utf8')
-cursor = cnx.cursor()
-is_exists = False
-update_count = 0
-insert_count = 0
+opts, args = getopt.getopt(sys.argv[1:], '', ["action=", 'file=', 'dryrun'])
+for opt in opts:
+    if opt[0] == '--action':
+        action = opt[1]
+    elif opt[0] == '--file':
+        filename = opt[1]
+    elif opt[0] == '--dryrun':
+        is_dryrun = True
 
-for line in f:
-    line = line.strip('\n')
-    counter = counter+1
 
-    if total % 1000 == 0 and counter % 3 == 0:
-        print("count: %s, insert_count: %s, update_count: %s" % (total, insert_count, update_count))
-    if counter == 1:
-        obj = None
-        obj = json.loads(line)
+if len(action) == 0:
+    sys.stderr.write("--action is required\n");
 
-        sql = 'select id from news where id = %s' % (obj['id'])
-        cursor.execute(sql)
-        data = cursor.fetchall()
-        if len(data) == 0:
-            is_exists = False
-        else:
-            is_exists = True
-        continue
 
-    if counter == 2:
-        line = line.strip('"')
-        title = line
-        continue
+if action == 'import':
+    f = open(filename, 'r')
 
-    if counter == 3:
-        total = total + 1
+    counter = 0
+    total = 0
+    title = ""
+    content = ""
+    obj = None
 
-        line = line.strip('"')
-        content = line
-        counter = 0
+    cnx = mysql.connector.connect(host='127.0.0.1', user='root', password='', database='newsdiff', charset='utf8')
+    cursor = cnx.cursor()
+    is_exists = False
+    update_count = 0
+    insert_count = 0
 
-        if is_exists:
-            sql = "update news set url = %s, normalized_id = %s, normalized_crc32 = %s, source = %s, created_at = %s, last_fetch_at = %s, last_changed_at = %s, error_count = %s where id = %s;"
-            data = (obj['url'], obj['normalized_id'], obj['normalized_crc32'], obj['source'], obj['created_at'], obj['last_fetch_at'], obj['last_changed_at'], obj['error_count'], obj['id'])
-            cursor.execute(sql, data)
+    for line in f:
+        line = line.strip('\n')
+        counter = counter+1
 
-            sql = "update news_info set time = %s, title = %s, body = %s where news_id = %s;"
-            data = (obj['version'], title, content, obj['id'])
-            cursor.execute(sql, data)
-            update_count = update_count + 1
-        else:
-            sql = "insert into news(id, url, normalized_id, normalized_crc32, source, created_at, last_fetch_at, last_changed_at, error_count) values(%s, %s, %s, %s, %s, %s, %s, %s, %s);"
-            data = (obj['id'], obj['url'], obj['normalized_id'], obj['normalized_crc32'], obj['source'], obj['created_at'], obj['last_fetch_at'], obj['last_changed_at'], obj['error_count'])
-            cursor.execute(sql, data)
+        if total % 1000 == 0 and counter % 3 == 0:
+            print("count: %s, insert_count: %s, update_count: %s" % (total, insert_count, update_count))
+        if counter == 1:
+            obj = None
+            obj = json.loads(line)
 
-            sql = "insert into news_info(news_id, time, title, body) values(%s, %s, %s, %s);"
-            data = (obj['id'], obj['version'], title, content)
-            cursor.execute(sql, data)
-            insert_count = insert_count + 1
-        cnx.commit()
 
-print("Finished: " + str(total))
-f.close()
-cursor.close()
-cnx.close()
+            id = obj['id']
+            if id in set_ids:
+                is_exists = True
+            else:
+                set_ids.add(id)
+                is_exists = False
+            continue
 
+        if counter == 2:
+            line = line.strip('"').replace('\\n', '\n').replace('\\r', '\r').replace('\\/', '/')
+            title = line
+            continue
+
+        if counter == 3:
+            total = total + 1
+
+            line = line.strip('"').replace('\\n', '\n').replace('\\r', '\r')
+            line = line.strip('"').replace('\\n', '\n').replace('\\r', '\r').replace('\\/', '/')
+            content = line
+            counter = 0
+
+            if not is_exists:
+                sql = "insert into news(url, normalized_id, normalized_crc32, source, created_at, last_fetch_at, last_changed_at, error_count) values(%s, %s, %s, %s, %s, %s, %s, %s);"
+                data = (obj['url'], obj['normalized_id'], obj['normalized_crc32'], obj['source'], obj['created_at'], obj['last_fetch_at'], obj['last_changed_at'], obj['error_count'])
+
+                if is_dryrun:
+                    print(sql)
+                    print(data)
+                else:
+                    data = (obj['url'], obj['normalized_id'], obj['normalized_crc32'], obj['source'], obj['created_at'], obj['last_fetch_at'], obj['last_changed_at'], obj['error_count'])
+                    cursor.execute(sql, data)
+                    id = cursor.lastrowid
+
+                    sql = "insert into news_info(news_id, time, title, body) values(%s, %s, %s, %s);"
+                    data = (id, obj['version'], title, content)
+                    cursor.execute(sql, data)
+                    insert_count = insert_count + 1
+                    cnx.commit()
+
+    print("Finished: " + str(total))
+    f.close()
+    cursor.close()
+    cnx.close()
 
