@@ -11,7 +11,7 @@ set_ids = set()
 is_dryrun = False
 action = ''
 
-opts, args = getopt.getopt(sys.argv[1:], '', ["action=", 'file=', 'dryrun'])
+opts, args = getopt.getopt(sys.argv[1:], '', ["action=", 'file=', 'dryrun', 'insert-diff'])
 for opt in opts:
     if opt[0] == '--action':
         action = opt[1]
@@ -19,6 +19,8 @@ for opt in opts:
         filename = opt[1]
     elif opt[0] == '--dryrun':
         is_dryrun = True
+    elif opt[0] == '--insert-diff':
+        is_insert_diff = True
 
 
 if len(action) == 0:
@@ -34,7 +36,7 @@ if action == 'import':
     content = ""
     obj = None
 
-    cnx = mysql.connector.connect(host='127.0.0.1', user='root', password='', database='newsdiff', charset='utf8')
+    cnx = mysql.connector.connect(host='127.0.0.1', user='root', password='', database='newsdiffreport', charset='utf8')
     cursor = cnx.cursor()
     is_exists = False
     update_count = 0
@@ -80,7 +82,6 @@ if action == 'import':
                     print(sql)
                     print(data)
                 else:
-                    data = (obj['url'], obj['normalized_id'], obj['normalized_crc32'], obj['source'], obj['created_at'], obj['last_fetch_at'], obj['last_changed_at'], obj['error_count'])
                     cursor.execute(sql, data)
                     id = cursor.lastrowid
 
@@ -89,6 +90,16 @@ if action == 'import':
                     cursor.execute(sql, data)
                     insert_count = insert_count + 1
                     cnx.commit()
+            else:
+                if is_insert_diff:
+                    if is_dryrun:
+                        print('id exists, insert diff')
+                    else:
+                        sql = "insert into news_info(news_id, time, title, body) values(%s, %s, %s, %s);"
+                        data = (id, obj['version'], title, content)
+                        cursor.execute(sql, data)
+                        insert_count = insert_count + 1
+                        cnx.commit()
 
     print("Finished: " + str(total))
     f.close()
