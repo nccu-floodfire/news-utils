@@ -75,18 +75,17 @@ if action == 'import':
             counter = 0
 
             if not is_exists:
-                sql = "insert into news(url, normalized_id, normalized_crc32, source, created_at, last_fetch_at, last_changed_at, error_count) values(%s, %s, %s, %s, %s, %s, %s, %s);"
-                data = (obj['url'], obj['normalized_id'], obj['normalized_crc32'], obj['source'], obj['created_at'], obj['last_fetch_at'], obj['last_changed_at'], obj['error_count'])
+                sql = "insert into news(id, url, normalized_id, normalized_crc32, source, created_at, last_fetch_at, last_changed_at, error_count) values(%s, %s, %s, %s, %s, %s, %s, %s, %s);"
+                data = (obj['id'], obj['url'], obj['normalized_id'], obj['normalized_crc32'], obj['source'], obj['created_at'], obj['last_fetch_at'], obj['last_changed_at'], obj['error_count'])
 
                 if is_dryrun:
                     print(sql)
                     print(data)
                 else:
                     cursor.execute(sql, data)
-                    id = cursor.lastrowid
 
                     sql = "insert into news_info(news_id, time, title, body) values(%s, %s, %s, %s);"
-                    data = (id, obj['version'], title, content)
+                    data = (obj['id'], obj['version'], title, content)
                     cursor.execute(sql, data)
                     insert_count = insert_count + 1
                     cnx.commit()
@@ -96,7 +95,7 @@ if action == 'import':
                         print('id exists, insert diff')
                     else:
                         sql = "insert into news_info(news_id, time, title, body) values(%s, %s, %s, %s);"
-                        data = (id, obj['version'], title, content)
+                        data = (obj['id'], obj['version'], title, content)
                         cursor.execute(sql, data)
                         insert_count = insert_count + 1
                         cnx.commit()
