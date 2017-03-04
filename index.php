@@ -15,7 +15,7 @@ if (file_exists('vendor/autoload.php')) {
 function help()
 {
     fwrite(STDERR, "Usage: \n");
-    fwrite(STDERR, "       --action={fetch-all|fetch-hot} \n");
+    fwrite(STDERR, "       --action={fetch-all|fetch-hot|fetch-count-for-link|sd} \n");
     fwrite(STDERR, "       --date \n");
     fwrite(STDERR, "       --db-name \n");
     fwrite(STDERR, "       --db-user \n");
